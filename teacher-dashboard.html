@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teachers Dashboard - Crescent Heights Oyo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('A_digital_graphic_design_features_the_Crescent_Hei.png') no-repeat center center;
+      background-size: cover;
+      color: #fff;
+      padding: 20px;
+    }
+    h1, h2, h3 {
+      text-align: center;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    }
+    ul {
+      list-style: none;
+      text-align: center;
+      padding: 0;
+    }
+    ul li {
+      display: inline-block;
+      margin: 8px;
+      background: #007bff;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    ul li:hover {
+      background: #0056b3;
+    }
+    .card {
+      max-width: 700px;
+      margin: 20px auto;
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border-radius: 8px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 4px;
+      border: none;
+    }
+    button {
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .save { background: #28a745; color: #fff; }
+    .delete { background: #dc3545; color: #fff; }
+    .add { background: #17a2b8; color: #fff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #fff; padding: 6px; text-align: center; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<h1>Teachers Dashboard</h1>
+<p style="text-align:center;">Crescent Heights Oyo — <em>Reaching for the Peak</em></p>
+
+<ul>
+  <li onclick="showSection('createProfile')">Create Student Profile</li>
+  <li onclick="showSection('students')">All Students</li>
+  <li onclick="showSection('manage')">Manage Student</li>
+</ul>
+
+<!-- CREATE PROFILE -->
+<div id="createProfile" class="card hidden">
+  <h2>Create Student Profile</h2>
+  <form id="studentForm">
+    <input type="text" id="newName" placeholder="Student Full Name" required>
+    <input type="text" id="newClass" placeholder="Class" required>
+    <input type="number" id="newAge" placeholder="Age" required min="1">
+    <select id="newGender" required>
+      <option value="">Select Gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
+    <button type="submit">Create Profile</button>
+  </form>
+  <p class="matric hidden" id="matricDisplay"></p>
+</div>
+
+<!-- ALL STUDENTS -->
+<div id="students" class="card hidden">
+  <h2>All Students</h2>
+  <table id="studentsTable"></table>
+</div>
+
+<!-- MANAGE STUDENT -->
+<div id="manage" class="card hidden">
+  <h2>Find Student</h2>
+  <input type="text" id="searchMatric" placeholder="Enter Matric Number">
+  <button class="add" onclick="findStudent()">Search</button>
+
+  <div id="studentArea" class="hidden">
+    <h3>Edit Profile</h3>
+    <input type="text" id="editName" placeholder="Student Full Name">
+    <input type="text" id="editClass" placeholder="Class">
+    <input type="number" id="editAge" placeholder="Age" min="1">
+    <select id="editGender">
+      <option value="">Select Gender</option>
+      <option>Male</option>
+      <option>Female</option>
+    </select>
+
+    <button class="save" onclick="saveProfile()">Save Profile</button>
+    <button class="delete" onclick="deleteStudent()">Delete Profile</button>
+    <button class="add" onclick="promoteStudent()">Promote Student</button>
+
+    <hr>
+    <h3>Upload Results</h3>
+    <input type="text" id="subject" placeholder="Subject">
+    <input type="number" id="score" placeholder="Score (0–100)" min="0" max="100">
+    <button class="add" onclick="addResult()">Add Subject</button>
+
+    <table id="resultTable">
+      <tr>
+        <th>Subject</th>
+        <th>Score</th>
+        <th>Action</th>
+      </tr>
+    </table>
+
+    <button class="save" onclick="saveResults()">Save Results</button>
+  </div>
+</div>
+
+<button class="delete" onclick="logout()">Logout</button>
+
+<script>
+  if (localStorage.getItem("teacherLoggedIn") !== "yes") {
+    window.location.href = "teachers-login.html";
+  }
+
+  let students = JSON.parse(localStorage.getItem("students")) || [];
+  let currentIndex = null;
+
+  function showSection(id) {
+    ["createProfile", "students", "manage"].forEach(s => document.getElementById(s).classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+    if (id === "students") loadStudents();
+  }
+
+  function generateMatric() {
+    return 'CHO' + Date.now().toString().slice(-6);
+  }
+
+  // CREATE STUDENT
+  document.getElementById("studentForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const name = document.getElementById("newName").value.trim();
+    const studentClass = document.getElementById("newClass").value.trim();
+    const age = document.getElementById("newAge").value.trim();
+    const gender = document.getElementById("newGender").value;
+
+    if (!name || !studentClass || !age || !gender) {
+      alert("All fields are required!");
+      return;
+    }
+
+    const matric = generateMatric();
+    const newStudent = { matric, name, studentClass, age, gender, results: [] };
+    students.push(newStudent);
+    localStorage.setItem("students", JSON.stringify(students));
+
+    document.getElementById("matricDisplay").textContent = "Student Matric Number: " + matric;
+    document.getElementById("matricDisplay").classList.remove("hidden");
+    this.reset();
+    alert("Student profile created!");
+  });
+
+  // LOAD STUDENTS
+  function loadStudents() {
+    const table = document.getElementById("studentsTable");
+    table.innerHTML = `
+      <tr>
+        <th>Matric</th>
+        <th>Name</th>
+        <th>Class</th>
+      </tr>
+    `;
+    students.forEach(s => {
+      table.innerHTML += `
+        <tr>
+          <td>${s.matric}</td>
+          <td>${s.name}</td>
+          <td>${s.studentClass}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // FIND STUDENT
+  function findStudent() {
+    const matric = document.getElementById("searchMatric").value.trim();
+    currentIndex = students.findIndex(s => s.matric === matric);
+
+    if (currentIndex === -1) {
+      alert("Student not found");
+      return;
+    }
+
+    const s = students[currentIndex];
+    document.getElementById("editName").value = s.name;
+    document.getElementById("editClass").value = s.studentClass;
+    document.getElementById("editAge").value = s.age;
+    document.getElementById("editGender").value = s.gender;
+
+    s.results = s.results || [];
+    loadResultTable();
+    document.getElementById("studentArea").classList.remove("hidden");
+  }
+
+  // SAVE PROFILE
+  function saveProfile() {
+    const name = document.getElementById("editName").value.trim();
+    const studentClass = document.getElementById("editClass").value.trim();
+    const age = document.getElementById("editAge").value.trim();
+    const gender = document.getElementById("editGender").value;
+
+    if (!name || !studentClass || !age || !gender) {
+      alert("All fields are required!");
+      return;
+    }
+
+    let s = students[currentIndex];
+    s.name = name;
+    s.studentClass = studentClass;
+    s.age = age;
+    s.gender = gender;
+
+    localStorage.setItem("students", JSON.stringify(students));
+    alert("Profile updated successfully");
+    loadStudents();
+  }
+
+  // DELETE STUDENT
+  function deleteStudent() {
+    if (!confirm("Are you sure you want to delete this student profile?")) return;
+    students.splice(currentIndex, 1);
+    localStorage.setItem("students", JSON.stringify(students));
+    alert("Student profile deleted");
+    document.getElementById("studentArea").classList.add("hidden");
+    loadStudents();
+  }
+
+  // PROMOTE STUDENT
+  function promoteStudent() {
+    if (currentIndex === null) {
+      alert("No student selected.");
+      return;
+    }
+
+    let s = students[currentIndex];
+    let currentClass = s.studentClass.trim();
+
+    // Try increment numeric part
+    let match = currentClass.match(/(\d+)/);
+    if (match) {
+      let nextClass = parseInt(match[1]) + 1;
+      s.studentClass = currentClass.replace(/\d+/, nextClass);
+    } else {
+      // Non-numeric class
+      s.studentClass = currentClass + " Next";
+    }
+
+    // Optionally reset results when promoted
+    s.results = [];
+
+    localStorage.setItem("students", JSON.stringify(students));
+    document.getElementById("editClass").value = s.studentClass;
+    loadResultTable();
+    alert(`Student promoted to ${s.studentClass}. Results have been reset.`);
+    loadStudents();
+  }
+
+  // ADD RESULT
+  function addResult() {
+    const subject = document.getElementById("subject").value.trim();
+    const score = document.getElementById("score").value.trim();
+
+    if (!subject || !score) {
+      alert("Subject and score are required!");
+      return;
+    }
+
+    const numScore = Number(score);
+    if (numScore < 0 || numScore > 100) {
+      alert("Score must be between 0 and 100");
+      return;
+    }
+
+    students[currentIndex].results.push({ subject, score: numScore });
+    document.getElementById("subject").value = "";
+    document.getElementById("score").value = "";
+    loadResultTable();
+  }
+
+  function loadResultTable() {
+    const table = document.getElementById("resultTable");
+    table.innerHTML = `
+      <tr>
+        <th>Subject</th>
+        <th>Score</th>
+        <th>Action</th>
+      </tr>
+    `;
+    students[currentIndex].results.forEach((r, i) => {
+      table.innerHTML += `
+        <tr>
+          <td>${r.subject}</td>
+          <td>${r.score}</td>
+          <td><button class="delete" onclick="removeResult(${i})">Remove</button></td>
+        </tr>
+      `;
+    });
+  }
+
+  function removeResult(i) {
+    students[currentIndex].results.splice(i, 1);
+    loadResultTable();
+  }
+
+  function saveResults() {
+    localStorage.setItem("students", JSON.stringify(students));
+    alert("Results saved successfully");
+  }
+
+  function logout() {
+    localStorage.removeItem("teacherLoggedIn");
+    window.location.href = "teachers-login.html";
+  }
+</script>
+
+</body>
+</html>
