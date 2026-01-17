@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Portal - Crescent Heights Oyo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('A_digital_graphic_design_features_the_Crescent_Hei.png') no-repeat center center;
+      background-size: cover;
+      color: #fff;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      text-align: center;
+    }
+    ul li {
+      display: inline-block;
+      margin: 10px;
+      cursor: pointer;
+      background: #007bff;
+      padding: 10px 15px;
+      border-radius: 5px;
+    }
+    ul li:hover {
+      background: #0056b3;
+    }
+    .card {
+      max-width: 500px;
+      margin: 20px auto;
+      background: rgba(0,0,0,0.7);
+      padding: 20px;
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #fff;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #004080;
+    }
+    button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      background: #dc3545;
+      color: #fff;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Student Portal</h1>
+
+<ul>
+  <li onclick="showSection('profile')">My Profile</li>
+  <li onclick="showSection('results')">Check Results</li>
+  <li onclick="showSection('others')">Other Info</li>
+</ul>
+
+<div id="profile" class="card hidden"></div>
+
+<div id="results" class="card hidden">
+  <h2>Academic Results</h2>
+  <table id="resultTable">
+    <tr>
+      <th>Subject</th>
+      <th>Score</th>
+      <th>Grade</th>
+    </tr>
+  </table>
+  <p id="average"></p>
+  <p id="remark"></p>
+</div>
+
+<div id="others" class="card hidden">
+  <h2>Other Information</h2>
+  <p>📢 Announcements – Coming Soon</p>
+  <p>💳 School Fees – Coming Soon</p>
+  <p>📄 Downloads – Coming Soon</p>
+</div>
+
+<button onclick="logout()">Logout</button>
+
+<script>
+  const student = JSON.parse(localStorage.getItem("loggedInStudent"));
+
+  if (!student) {
+    window.location.href = "student-login.html";
+  }
+
+  function showSection(section) {
+    ["profile","results","others"].forEach(id => {
+      document.getElementById(id).classList.add("hidden");
+    });
+    document.getElementById(section).classList.remove("hidden");
+
+    if (section === "profile") loadProfile();
+    if (section === "results") loadResults();
+  }
+
+  function loadProfile() {
+    document.getElementById("profile").innerHTML = `
+      <h2>My Profile</h2>
+      <p><strong>Name:</strong> ${student.name}</p>
+      <p><strong>Class:</strong> ${student.studentClass}</p>
+      <p><strong>Age:</strong> ${student.age}</p>
+      <p><strong>Gender:</strong> ${student.gender}</p>
+      <p><strong>Matric:</strong> ${student.matric}</p>
+    `;
+  }
+
+  function loadResults() {
+    const table = document.getElementById("resultTable");
+    table.innerHTML = `
+      <tr>
+        <th>Subject</th>
+        <th>Score</th>
+        <th>Grade</th>
+      </tr>
+    `;
+
+    // Demo results (teachers will later upload this)
+    const results = student.results || [
+      { subject: "Mathematics", score: 78 },
+      { subject: "English", score: 82 },
+      { subject: "Basic Science", score: 74 }
+    ];
+
+    let total = 0;
+
+    results.forEach(r => {
+      total += r.score;
+      const grade = getGrade(r.score);
+      table.innerHTML += `
+        <tr>
+          <td>${r.subject}</td>
+          <td>${r.score}</td>
+          <td>${grade}</td>
+        </tr>
+      `;
+    });
+
+    const avg = (total / results.length).toFixed(2);
+    document.getElementById("average").innerHTML = `<strong>Average:</strong> ${avg}%`;
+    document.getElementById("remark").innerHTML = `<strong>Remark:</strong> ${getRemark(avg)}`;
+  }
+
+  function getGrade(score) {
+    if (score >= 70) return "A";
+    if (score >= 60) return "B";
+    if (score >= 50) return "C";
+    if (score >= 45) return "D";
+    return "F";
+  }
+
+  function getRemark(avg) {
+    if (avg >= 70) return "Excellent – Reaching for the Peak!";
+    if (avg >= 60) return "Very Good";
+    if (avg >= 50) return "Good";
+    return "Needs Improvement";
+  }
+
+  function logout() {
+    localStorage.removeItem("loggedInStudent");
+    window.location.href = "student-login.html";
+  }
+</script>
+
+</body>
+</html>
